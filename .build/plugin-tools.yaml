@@ -1,0 +1,146 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "PackageStructure": ["<PackageStructure>"]
+  "PlagadeonNotes-arm64-apple-macosx-debug.exe": ["<PlagadeonNotes-arm64-apple-macosx-debug.exe>"]
+  "PlagadeonNotes-arm64-apple-macosx-debug.module": ["<PlagadeonNotes-arm64-apple-macosx-debug.module>"]
+  "PlagadeonNotesPackageTests-arm64-apple-macosx-debug.module": ["<PlagadeonNotesPackageTests-arm64-apple-macosx-debug.module>"]
+  "PlagadeonNotesPackageTests-arm64-apple-macosx-debug.test": ["<PlagadeonNotesPackageTests-arm64-apple-macosx-debug.test>"]
+  "PlagadeonNotesTests-arm64-apple-macosx-debug.module": ["<PlagadeonNotesTests-arm64-apple-macosx-debug.module>"]
+  "main": ["<PlagadeonNotes-arm64-apple-macosx-debug.exe>","<PlagadeonNotes-arm64-apple-macosx-debug.module>"]
+  "test": ["<PlagadeonNotes-arm64-apple-macosx-debug.exe>","<PlagadeonNotes-arm64-apple-macosx-debug.module>","<PlagadeonNotesPackageTests-arm64-apple-macosx-debug.test>","<PlagadeonNotesTests-arm64-apple-macosx-debug.module>"]
+default: "main"
+nodes:
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Tests/PlagadeonNotesTests/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes":
+    is-mutated: true
+commands:
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes-entitlement.plist"]
+    description: "Write auxiliary file /Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes-entitlement.plist"
+
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/App.swift","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/AppleNotesSnapshot.swift"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources"]
+    description: "Write auxiliary file /Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources"
+
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swift.o"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.product/Objects.LinkFileList"
+
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources"]
+    description: "Write auxiliary file /Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources"
+
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift":
+    tool: test-entry-point-tool
+    inputs: []
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift"]
+
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/NoteModelTests.swift.o"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.product/Objects.LinkFileList"
+
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Tests/PlagadeonNotesTests/NoteModelTests.swift"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources"]
+    description: "Write auxiliary file /Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources"
+
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+
+  "<PlagadeonNotes-arm64-apple-macosx-debug.exe>":
+    tool: phony
+    inputs: ["<PlagadeonNotes-arm64-apple-macosx-debug.exe-CodeSigning>"]
+    outputs: ["<PlagadeonNotes-arm64-apple-macosx-debug.exe>"]
+
+  "<PlagadeonNotes-arm64-apple-macosx-debug.module>":
+    tool: phony
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotes.swiftmodule"]
+    outputs: ["<PlagadeonNotes-arm64-apple-macosx-debug.module>"]
+
+  "<PlagadeonNotesPackageTests-arm64-apple-macosx-debug.module>":
+    tool: phony
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesPackageTests.swiftmodule"]
+    outputs: ["<PlagadeonNotesPackageTests-arm64-apple-macosx-debug.module>"]
+
+  "<PlagadeonNotesPackageTests-arm64-apple-macosx-debug.test>":
+    tool: phony
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.xctest/Contents/MacOS/PlagadeonNotesPackageTests"]
+    outputs: ["<PlagadeonNotesPackageTests-arm64-apple-macosx-debug.test>"]
+
+  "<PlagadeonNotesTests-arm64-apple-macosx-debug.module>":
+    tool: phony
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/NoteModelTests.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesTests.swiftmodule"]
+    outputs: ["<PlagadeonNotesTests-arm64-apple-macosx-debug.module>"]
+
+  "C.PlagadeonNotes-arm64-apple-macosx-debug.exe":
+    tool: shell
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.product/Objects.LinkFileList"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/PlagadeonNotes"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-L","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug","-o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes","-module-name","PlagadeonNotes","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_PlagadeonNotes_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx13.0","-framework","AVKit","-framework","AVFoundation","-framework","PDFKit","-framework","AppKit","-Xlinker","-add_ast_path","-Xlinker","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotes.swiftmodule","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g"]
+
+  "C.PlagadeonNotes-arm64-apple-macosx-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes-entitlement.plist"]
+    outputs: ["<PlagadeonNotes-arm64-apple-macosx-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/PlagadeonNotes"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes-entitlement.plist","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes"]
+
+  "C.PlagadeonNotes-arm64-apple-macosx-debug.module":
+    tool: shell
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/App.swift","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/AppleNotesSnapshot.swift","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotes.swiftmodule"]
+    description: "Compiling Swift Module 'PlagadeonNotes' (2 sources)"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-module-name","PlagadeonNotes","-emit-dependencies","-emit-module","-emit-module-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotes.swiftmodule","-output-file-map","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/output-file-map.json","-incremental","-c","@/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources","-I","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx13.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","PlagadeonNotes_main","-swift-version","6","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-fPIC","-Xcc","-g","-package-name","plagadeon_notes"]
+
+  "C.PlagadeonNotesPackageTests-arm64-apple-macosx-debug.module":
+    tool: shell
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesTests.swiftmodule","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesPackageTests.swiftmodule"]
+    description: "Compiling Swift Module 'PlagadeonNotesPackageTests' (1 sources)"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-module-name","PlagadeonNotesPackageTests","-emit-dependencies","-emit-module","-emit-module-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesPackageTests.swiftmodule","-output-file-map","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources","-I","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx13.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-Xfrontend","-enable-cross-import-overlays","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/include/PlagadeonNotesPackageTests-Swift.h","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-fPIC","-Xcc","-g","-package-name","plagadeon_notes"]
+
+  "C.PlagadeonNotesPackageTests-arm64-apple-macosx-debug.test":
+    tool: shell
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/NoteModelTests.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.product/Objects.LinkFileList"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.xctest/Contents/MacOS/PlagadeonNotesPackageTests"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.xctest/Contents/MacOS/PlagadeonNotesPackageTests"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-L","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug","-o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.xctest/Contents/MacOS/PlagadeonNotesPackageTests","-module-name","PlagadeonNotesPackageTests","-Xlinker","-no_warn_duplicate_libraries","-Xlinker","-bundle","-Xlinker","-rpath","-Xlinker","@loader_path/../../../","@/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx14.0","-framework","AVKit","-framework","AVFoundation","-framework","PDFKit","-framework","AppKit","-Xlinker","-add_ast_path","-Xlinker","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotes.swiftmodule","-Xlinker","-add_ast_path","-Xlinker","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesPackageTests.swiftmodule","-Xlinker","-add_ast_path","-Xlinker","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesTests.swiftmodule","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g"]
+
+  "C.PlagadeonNotesTests-arm64-apple-macosx-debug.module":
+    tool: shell
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Tests/PlagadeonNotesTests/NoteModelTests.swift","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources"]
+    outputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/NoteModelTests.swift.o","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesTests.swiftmodule"]
+    description: "Compiling Swift Module 'PlagadeonNotesTests' (1 sources)"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-module-name","PlagadeonNotesTests","-emit-dependencies","-emit-module","-emit-module-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules/PlagadeonNotesTests.swiftmodule","-output-file-map","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources","-I","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-Xfrontend","-enable-cross-import-overlays","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-swift-version","6","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-fPIC","-Xcc","-g","-package-name","plagadeon_notes"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Tests/PlagadeonNotesTests/","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Package.swift","/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

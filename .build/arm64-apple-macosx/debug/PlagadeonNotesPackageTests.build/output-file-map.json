@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/primary.swiftdeps"
+  },
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift": {
+    "dependencies": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.d",
+    "object": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.swift.o",
+    "swiftmodule": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner~partial.swiftmodule",
+    "swift-dependencies": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.swiftdeps",
+    "diagnostics": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.dia"
+  }
+}

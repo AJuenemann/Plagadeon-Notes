@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:plagadeon-notes}",
+            "name": "Debug PlagadeonNotes",
+            "target": "PlagadeonNotes",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug PlagadeonNotes"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:plagadeon-notes}",
+            "name": "Release PlagadeonNotes",
+            "target": "PlagadeonNotes",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release PlagadeonNotes"
+        }
+    ]
+}

@@ -1,0 +1,605 @@
+{
+  "builtTestProducts" : [
+    {
+      "binaryPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.xctest/Contents/MacOS/PlagadeonNotesPackageTests",
+      "packagePath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes",
+      "productName" : "PlagadeonNotesPackageTests"
+    }
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.PlagadeonNotes-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources",
+      "importPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/App.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/AppleNotesSnapshot.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "PlagadeonNotes",
+      "moduleOutputPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules/PlagadeonNotes.swiftmodule",
+      "objects" : [
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swift.o",
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-Onone",
+        "-enable-testing",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "PlagadeonNotes_main",
+        "-swift-version",
+        "6",
+        "-Xfrontend",
+        "-experimental-lazy-typecheck",
+        "-Xfrontend",
+        "-experimental-skip-all-function-bodies",
+        "-Xfrontend",
+        "-experimental-allow-module-with-compiler-errors",
+        "-Xfrontend",
+        "-empty-abi-descriptor",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "plagadeon_notes"
+      ],
+      "outputFileMapPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotes.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules/PlagadeonNotes.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : true,
+      "sources" : [
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/App.swift",
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/AppleNotesSnapshot.swift"
+      ],
+      "tempsPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotes.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.PlagadeonNotesPackageTests-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources",
+      "importPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules/PlagadeonNotesTests.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "PlagadeonNotesPackageTests",
+      "moduleOutputPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules/PlagadeonNotesPackageTests.swiftmodule",
+      "objects" : [
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/runner.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/include/PlagadeonNotesPackageTests-Swift.h",
+        "-Xfrontend",
+        "-experimental-lazy-typecheck",
+        "-Xfrontend",
+        "-experimental-skip-all-function-bodies",
+        "-Xfrontend",
+        "-experimental-allow-module-with-compiler-errors",
+        "-Xfrontend",
+        "-empty-abi-descriptor",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "plagadeon_notes"
+      ],
+      "outputFileMapPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules/PlagadeonNotesPackageTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : true,
+      "sources" : [
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift"
+      ],
+      "tempsPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.PlagadeonNotesTests-arm64-apple-macosx-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources",
+      "importPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Tests/PlagadeonNotesTests/NoteModelTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules/PlagadeonNotes.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "PlagadeonNotesTests",
+      "moduleOutputPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules/PlagadeonNotesTests.swiftmodule",
+      "objects" : [
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/NoteModelTests.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-swift-version",
+        "6",
+        "-Xfrontend",
+        "-experimental-lazy-typecheck",
+        "-Xfrontend",
+        "-experimental-skip-all-function-bodies",
+        "-Xfrontend",
+        "-experimental-allow-module-with-compiler-errors",
+        "-Xfrontend",
+        "-empty-abi-descriptor",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "plagadeon_notes"
+      ],
+      "outputFileMapPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules/PlagadeonNotesTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : true,
+      "sources" : [
+        "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Tests/PlagadeonNotesTests/NoteModelTests.swift"
+      ],
+      "tempsPath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesTests.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "PlagadeonNotes" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PlagadeonNotes",
+      "-package-name",
+      "plagadeon_notes",
+      "-c",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/App.swift",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/AppleNotesSnapshot.swift",
+      "-I",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-Onone",
+      "-enable-testing",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "PlagadeonNotes_main",
+      "-swift-version",
+      "6",
+      "-Xfrontend",
+      "-experimental-lazy-typecheck",
+      "-Xfrontend",
+      "-experimental-skip-all-function-bodies",
+      "-Xfrontend",
+      "-experimental-allow-module-with-compiler-errors",
+      "-Xfrontend",
+      "-empty-abi-descriptor",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "plagadeon_notes",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "PlagadeonNotesPackageTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PlagadeonNotesPackageTests",
+      "-package-name",
+      "plagadeon_notes",
+      "-c",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift",
+      "-I",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/include/PlagadeonNotesPackageTests-Swift.h",
+      "-Xfrontend",
+      "-experimental-lazy-typecheck",
+      "-Xfrontend",
+      "-experimental-skip-all-function-bodies",
+      "-Xfrontend",
+      "-experimental-allow-module-with-compiler-errors",
+      "-Xfrontend",
+      "-empty-abi-descriptor",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "plagadeon_notes",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "PlagadeonNotesTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PlagadeonNotesTests",
+      "-package-name",
+      "plagadeon_notes",
+      "-c",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Tests/PlagadeonNotesTests/NoteModelTests.swift",
+      "-I",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-swift-version",
+      "6",
+      "-Xfrontend",
+      "-experimental-lazy-typecheck",
+      "-Xfrontend",
+      "-experimental-skip-all-function-bodies",
+      "-Xfrontend",
+      "-experimental-allow-module-with-compiler-errors",
+      "-Xfrontend",
+      "-empty-abi-descriptor",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "plagadeon_notes",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "PlagadeonNotes" : [
+
+    ],
+    "PlagadeonNotesPackageTests" : [
+      "PlagadeonNotesTests",
+      "PlagadeonNotes"
+    ],
+    "PlagadeonNotesTests" : [
+      "PlagadeonNotes"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/App.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/AppleNotesSnapshot.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotes.build/sources"
+    },
+    "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.derived/runner.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesPackageTests.build/sources"
+    },
+    "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Tests/PlagadeonNotesTests/NoteModelTests.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/PlagadeonNotesTests.build/sources"
+    },
+    "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/index-build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}

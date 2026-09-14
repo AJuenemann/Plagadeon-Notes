@@ -1,0 +1,19 @@
+{
+  "": {
+    "swift-dependencies": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/primary.swiftdeps"
+  },
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/App.swift": {
+    "dependencies": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.d",
+    "object": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swift.o",
+    "swiftmodule": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App~partial.swiftmodule",
+    "swift-dependencies": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.swiftdeps",
+    "diagnostics": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/App.dia"
+  },
+  "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/Sources/PlagadeonNotes/AppleNotesSnapshot.swift": {
+    "dependencies": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.d",
+    "object": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swift.o",
+    "swiftmodule": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot~partial.swiftmodule",
+    "swift-dependencies": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.swiftdeps",
+    "diagnostics": "/Users/ajuenemann/Library/Mobile Documents/com~apple~CloudDocs/plagadeon-notes/.build/arm64-apple-macosx/debug/PlagadeonNotes.build/AppleNotesSnapshot.dia"
+  }
+}
