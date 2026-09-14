@@ -64,11 +64,12 @@ struct Note: Identifiable, Codable, Equatable {
     var attachments: [Attachment] = []
     var folder = "Notizen"
     var tags: [String] = []
+    var contentBlocks: [NoteContentBlock] = []
     var sourceID: String?
     var modifiedAt = Date()
 
     enum CodingKeys: String, CodingKey {
-        case id, title, body, attachments, folder, tags, sourceID, modifiedAt
+        case id, title, body, attachments, folder, tags, contentBlocks, sourceID, modifiedAt
     }
 
     init(
@@ -78,6 +79,7 @@ struct Note: Identifiable, Codable, Equatable {
         attachments: [Attachment] = [],
         folder: String = "Notizen",
         tags: [String] = [],
+        contentBlocks: [NoteContentBlock] = [],
         sourceID: String? = nil,
         modifiedAt: Date = Date()
     ) {
@@ -87,6 +89,7 @@ struct Note: Identifiable, Codable, Equatable {
         self.attachments = attachments
         self.folder = folder
         self.tags = tags
+        self.contentBlocks = contentBlocks
         self.sourceID = sourceID
         self.modifiedAt = modifiedAt
     }
@@ -99,8 +102,55 @@ struct Note: Identifiable, Codable, Equatable {
         attachments = try values.decodeIfPresent([Attachment].self, forKey: .attachments) ?? []
         folder = try values.decodeIfPresent(String.self, forKey: .folder) ?? "Notizen"
         tags = try values.decodeIfPresent([String].self, forKey: .tags) ?? []
+        contentBlocks = try values.decodeIfPresent([NoteContentBlock].self, forKey: .contentBlocks) ?? []
         sourceID = try values.decodeIfPresent(String.self, forKey: .sourceID)
         modifiedAt = try values.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? Date()
+    }
+}
+
+enum NoteContentBlock: Codable, Equatable, Identifiable {
+    case text(String)
+    case attachment(UUID)
+
+    var id: String {
+        switch self {
+        case .text(let value):
+            return "text:\(value.hashValue)"
+        case .attachment(let attachmentID):
+            return "attachment:\(attachmentID.uuidString)"
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case type, value
+    }
+
+    private enum BlockType: String, Codable {
+        case text
+        case attachment
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(BlockType.self, forKey: .type)
+        switch type {
+        case .text:
+            self = .text(try container.decode(String.self, forKey: .value))
+        case .attachment:
+            self = .attachment(try container.decode(UUID.self, forKey: .value))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .text(let value):
+            try container.encode(BlockType.text, forKey: .type)
+            try container.encode(value, forKey: .value)
+        case .attachment(let attachmentID):
+            try container.encode(BlockType.attachment, forKey: .type)
+            try container.encode(attachmentID, forKey: .value)
+        }
     }
 }
 
@@ -158,6 +208,12 @@ final class NoteStore: ObservableObject {
     func delete(_ note: Note) {
         notes.removeAll { $0.id == note.id }
         if notes.isEmpty { notes = [Note()] }
+    }
+
+    func deleteAllNotes() {
+        notes = [Note()]
+        try? FileManager.default.removeItem(at: attachmentsURL)
+        try? FileManager.default.createDirectory(at: attachmentsURL, withIntermediateDirectories: true)
     }
 
     func deleteFolder(_ folder: String) {
@@ -288,12 +344,14 @@ final class NoteStore: ObservableObject {
                     noteAttachments.append(stored)
                 }
             }
+            let contentBlocks = [.text(candidate.body)] + noteAttachments.map { NoteContentBlock.attachment($0.id) }
             let note = Note(
                 title: candidate.title,
                 body: candidate.body,
                 attachments: noteAttachments,
                 folder: candidate.folder,
                 tags: [],
+                contentBlocks: contentBlocks,
                 sourceID: candidate.sourceID,
                 modifiedAt: candidate.modifiedAt
             )
@@ -438,6 +496,10 @@ enum CategoryFilter: Hashable {
     case tag(String)
 }
 
+private extension Notification.Name {
+    static let restorePlagadeonDividerPositions = Notification.Name("PlagadeonNotes.restoreDividerPositions")
+}
+
 struct ContentView: View {
     @StateObject private var store = NoteStore()
     @State private var selectedFilter: CategoryFilter = .all
@@ -452,6 +514,9 @@ struct ContentView: View {
     @State private var folderPendingDeletion: String?
     @State private var tagPendingDeletion: String?
     @State private var showingSingleNote = false
+    @State private var logoTapCount = 0
+    @State private var lastLogoTap = Date.distantPast
+    @State private var showingDeleteAllDialog = false
 
     private var currentCategoryTitle: String {
         switch selectedFilter {
@@ -504,44 +569,34 @@ struct ContentView: View {
     private var sidebarColumn: some View {
         List {
                 Section("Übersicht") {
-                    Button {
-                        selectedFilter = .all
-                    } label: {
-                        Label {
-                        HStack {
-                            Text("Alle Notizen")
-                            Spacer()
-                            Text("\(store.notes.count)")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
-                        }
-                        } icon: {
-                            Image(systemName: "tray.full")
-                        }
+                    HStack(spacing: 8) {
+                        Image(systemName: "tray.full")
+                        Text("Alle Notizen")
+                        Spacer()
+                        Text("\(store.notes.count)")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture { selectedFilter = .all }
                     .foregroundStyle(.primary)
                     .listRowBackground(selectedFilter == .all ? appSelectedRowColor : appEggshellColor)
                 }
 
                 Section("Kategorien / Ordner") {
                     ForEach(availableFolders, id: \.self) { folder in
-                        Button {
-                            selectedFilter = .folder(folder)
-                        } label: {
-                            Label {
-                            HStack {
-                                Text(folder)
-                                Spacer()
-                                Text("\(countNotes(in: folder))")
-                                    .foregroundStyle(.secondary)
-                                    .font(.caption)
-                            }
-                            } icon: {
-                                Image(systemName: "folder")
-                            }
+                        HStack(spacing: 8) {
+                            Image(systemName: "folder")
+                            Text(folder)
+                            Spacer()
+                            Text("\(countNotes(in: folder))")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
                         }
-                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .onTapGesture { selectedFilter = .folder(folder) }
                         .foregroundStyle(.primary)
                         .listRowBackground(selectedFilter == .folder(folder) ? appSelectedRowColor : appEggshellColor)
                         .contextMenu {
@@ -555,22 +610,17 @@ struct ContentView: View {
                 if !availableTags.isEmpty {
                     Section("Tags") {
                         ForEach(availableTags, id: \.self) { tag in
-                            Button {
-                                selectedFilter = .tag(tag)
-                            } label: {
-                                Label {
-                                HStack {
-                                    Text(tag)
-                                    Spacer()
-                                    Text("\(countNotes(withTag: tag))")
-                                        .foregroundStyle(.secondary)
-                                        .font(.caption)
-                                }
-                                } icon: {
-                                    Image(systemName: "tag")
-                                }
+                            HStack(spacing: 8) {
+                                Image(systemName: "tag")
+                                Text(tag)
+                                Spacer()
+                                Text("\(countNotes(withTag: tag))")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
                             }
-                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                            .onTapGesture { selectedFilter = .tag(tag) }
                             .foregroundStyle(.primary)
                             .listRowBackground(selectedFilter == .tag(tag) ? appSelectedRowColor : appEggshellColor)
                             .contextMenu {
@@ -656,19 +706,24 @@ struct ContentView: View {
                 }) {
                     Label("Neue Notiz", systemImage: "square.and.pencil")
                 }
+                .help("Neue Notiz")
                 Button(action: { showingFolderImporter = true }) {
-                    Label("Exportordner importieren", systemImage: "square.and.arrow.down")
+                    Label("Exportordner importieren", systemImage: "folder.badge.plus")
                 }
+                .help("Exportordner importieren")
                 Button(action: chooseAppleNotesFolder) {
-                    Label("Apple-Notizen importieren", systemImage: "square.and.arrow.down")
+                    Label("Apple-Notizen importieren", systemImage: "note.text.badge.plus")
                 }
+                .help("Apple-Notizen importieren")
                 Button(action: { showingBackupImporter = true }) {
                     Label("Backup wiederherstellen", systemImage: "arrow.clockwise.icloud")
                 }
+                .help("Backup wiederherstellen")
                 Button(action: { notePendingDeletion = selectedID.flatMap { id in store.notes.first { $0.id == id } } }) {
                     Label("Notiz löschen", systemImage: "trash")
                 }
                 .disabled(selectedID == nil)
+                .help("Notiz löschen")
             }
         }
         .background(appEggshellColor)
@@ -709,7 +764,11 @@ struct ContentView: View {
         .toolbarBackground(appEggshellColor, for: .automatic)
         .toolbar {
             ToolbarItem(placement: .navigation) {
-                PlagadeonLogo()
+                Button(action: handleLogoTap) {
+                    PlagadeonLogo()
+                }
+                .buttonStyle(.plain)
+                    .help("Plagadeon Notes")
             }
         }
         .overlay(WindowAppearanceConfigurator().allowsHitTesting(false))
@@ -725,6 +784,7 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.primary)
+                .help("Zurück zur Übersicht")
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -766,6 +826,7 @@ struct ContentView: View {
             if let currentID = selectedID, !filteredNotes.contains(where: { $0.id == currentID }) {
                 selectedID = filteredNotes.first?.id
             }
+            NotificationCenter.default.post(name: .restorePlagadeonDividerPositions, object: nil)
         }
         .fileImporter(
             isPresented: $showingFolderImporter,
@@ -842,6 +903,32 @@ struct ContentView: View {
             Button("Abbrechen", role: .cancel) { tagPendingDeletion = nil }
         } message: { tag in
             Text("Der Tag wird aus allen Notizen entfernt: #\(tag)")
+        }
+        .confirmationDialog(
+            "Alle Notizen löschen?",
+            isPresented: $showingDeleteAllDialog
+        ) {
+            Button("Ja", role: .destructive) {
+                store.deleteAllNotes()
+                selectedID = store.notes.first?.id
+                selectedFilter = .all
+                showingDeleteAllDialog = false
+            }
+            Button("Nein", role: .cancel) {
+                showingDeleteAllDialog = false
+            }
+        } message: {
+            Text("Alle lokalen Notizen und Anhänge werden gelöscht.")
+        }
+    }
+
+    private func handleLogoTap() {
+        let now = Date()
+        logoTapCount = now.timeIntervalSince(lastLogoTap) <= 1.5 ? logoTapCount + 1 : 1
+        lastLogoTap = now
+        if logoTapCount == 5 {
+            logoTapCount = 0
+            showingDeleteAllDialog = true
         }
     }
 
@@ -950,18 +1037,17 @@ struct SplitDividerCursorMonitor: NSViewRepresentable {
         SplitDividerCursorView()
     }
 
-    func updateNSView(_ nsView: SplitDividerCursorView, context: Context) {
-        DispatchQueue.main.async {
-            nsView.restoreSavedDividerPositions()
-        }
-    }
+    func updateNSView(_ nsView: SplitDividerCursorView, context: Context) {}
 }
 
 final class SplitDividerCursorView: NSView {
     private var localMonitor: Any?
+    private var resizeObservers: [NSObjectProtocol] = []
     private var cursorIsOnDivider = false
+    private var dividerDragActive = false
     private var isRestoringDividerPositions = false
     private let dividerPositionsKey = "PlagadeonNotesDividerPositions"
+    private let dividerDefaults = UserDefaults(suiteName: "de.plagadeon.notes")!
 
     private var dividerCursor: NSCursor {
         if #available(macOS 15.0, *) {
@@ -976,6 +1062,7 @@ final class SplitDividerCursorView: NSView {
             for splitView in splitViews(in: window?.contentView) {
                 splitView.autosaveName = "PlagadeonNotesColumns"
             }
+            observePrimarySplitViewWhenReady()
             DispatchQueue.main.async { [weak self] in
                 self?.restoreSavedDividerPositions()
             }
@@ -985,10 +1072,25 @@ final class SplitDividerCursorView: NSView {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
                 self?.restoreSavedDividerPositions()
             }
-            localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged, .leftMouseUp]) { [weak self] event in
-                self?.updateCursor()
-                if event.type == .leftMouseDragged || event.type == .leftMouseUp {
-                    self?.saveDividerPositions()
+            localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown, .leftMouseDragged, .leftMouseUp]) { [weak self] event in
+                guard let self else { return event }
+                switch event.type {
+                case .leftMouseDown:
+                    self.updateCursor()
+                    self.dividerDragActive = self.cursorIsOnDivider
+                case .leftMouseDragged:
+                    self.updateCursor()
+                    if self.dividerDragActive {
+                        self.saveDividerPositions()
+                    }
+                case .leftMouseUp:
+                    if self.dividerDragActive {
+                        self.saveDividerPositions()
+                    }
+                    self.dividerDragActive = false
+                    self.updateCursor()
+                default:
+                    self.updateCursor()
                 }
                 return event
             }
@@ -1007,6 +1109,41 @@ final class SplitDividerCursorView: NSView {
             NSEvent.removeMonitor(localMonitor)
             self.localMonitor = nil
         }
+        for resizeObserver in resizeObservers {
+            NotificationCenter.default.removeObserver(resizeObserver)
+        }
+        resizeObservers.removeAll()
+    }
+
+    private func observePrimarySplitViewWhenReady() {
+        let installObserver: () -> Void = { [weak self] in
+            guard let self, self.resizeObservers.isEmpty,
+                  let contentView = self.window?.contentView,
+                  let splitView = self.primarySplitView(in: contentView) else { return }
+            let resizeObserver = NotificationCenter.default.addObserver(
+                forName: NSSplitView.didResizeSubviewsNotification,
+                object: splitView,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self,
+                      self.dividerDragActive,
+                      !self.isRestoringDividerPositions else { return }
+                self.saveDividerPositions()
+            }
+            let restoreObserver = NotificationCenter.default.addObserver(
+                forName: .restorePlagadeonDividerPositions,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.restoreSavedDividerPositions()
+                }
+            }
+            self.resizeObservers = [resizeObserver, restoreObserver]
+        }
+        installObserver()
+        DispatchQueue.main.async(execute: installObserver)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: installObserver)
     }
 
     private func updateCursor() {
@@ -1103,7 +1240,7 @@ final class SplitDividerCursorView: NSView {
     func restoreSavedDividerPositions() {
         guard !isRestoringDividerPositions else { return }
         guard let contentView = window?.contentView,
-              let positions = UserDefaults.standard.array(forKey: dividerPositionsKey) as? [Double] else {
+              let positions = dividerDefaults.array(forKey: dividerPositionsKey) as? [Double] else {
             return
         }
         guard let splitView = primarySplitView(in: contentView) else { return }
@@ -1120,7 +1257,7 @@ final class SplitDividerCursorView: NSView {
         let positions = (0..<max(splitView.subviews.count - 1, 0)).map {
             Double(splitView.subviews[$0].frame.maxX)
         }
-        UserDefaults.standard.set(positions, forKey: dividerPositionsKey)
+        dividerDefaults.set(positions, forKey: dividerPositionsKey)
     }
 
     private func primarySplitView(in view: NSView) -> NSSplitView? {
@@ -1308,12 +1445,112 @@ private final class NativeSplitViewDelegate: NSObject, NSSplitViewDelegate {
     }
 }
 
+@MainActor
+final class NoteTextEditorController: ObservableObject {
+    weak var textView: NSTextView?
+
+    func apply(marker: String) {
+        guard let textView else { return }
+        let range = textView.selectedRange()
+        let selectedText = (textView.string as NSString).substring(with: range)
+        let replacement: String
+        if selectedText.isEmpty {
+            replacement = "\(marker)\(marker)"
+        } else if selectedText.hasPrefix(marker), selectedText.hasSuffix(marker), selectedText.count >= marker.count * 2 {
+            replacement = String(selectedText.dropFirst(marker.count).dropLast(marker.count))
+        } else {
+            replacement = "\(marker)\(selectedText)\(marker)"
+        }
+        textView.replaceCharacters(in: range, with: replacement)
+        let cursorLocation = range.location + (selectedText.isEmpty ? marker.count : replacement.count)
+        textView.setSelectedRange(NSRange(location: cursorLocation, length: selectedText.isEmpty ? 0 : replacement.count))
+        textView.didChangeText()
+        textView.window?.makeFirstResponder(textView)
+    }
+
+    func prefixSelectedLines(with prefix: String) {
+        guard let textView else { return }
+        let string = textView.string as NSString
+        let selectedRange = textView.selectedRange()
+        let lineStart = string.lineRange(for: NSRange(location: selectedRange.location, length: 0)).location
+        let selectedEnd = min(string.length, selectedRange.location + selectedRange.length)
+        let lineEnd = string.lineRange(for: NSRange(location: selectedEnd, length: 0)).upperBound
+        let lineRange = NSRange(location: lineStart, length: lineEnd - lineStart)
+        let lines = string.substring(with: lineRange)
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line in
+                line.hasPrefix(prefix) ? String(line.dropFirst(prefix.count)) : prefix + line
+            }
+            .joined(separator: "\n")
+        textView.replaceCharacters(in: lineRange, with: lines)
+        textView.setSelectedRange(NSRange(location: lineStart, length: lines.count))
+        textView.didChangeText()
+        textView.window?.makeFirstResponder(textView)
+    }
+}
+
+struct NoteTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    let controller: NoteTextEditorController
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, controller: controller)
+    }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.hasVerticalScroller = true
+        scrollView.drawsBackground = false
+
+        let textView = NSTextView()
+        textView.isRichText = false
+        textView.importsGraphics = false
+        textView.usesFontPanel = false
+        textView.font = .systemFont(ofSize: NSFont.systemFontSize)
+        textView.backgroundColor = .clear
+        textView.drawsBackground = false
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.widthTracksTextView = true
+        textView.string = text
+        textView.delegate = context.coordinator
+        controller.textView = textView
+        scrollView.documentView = textView
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+        controller.textView = textView
+        if textView.string != text {
+            textView.string = text
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        @Binding var text: String
+        let controller: NoteTextEditorController
+
+        init(text: Binding<String>, controller: NoteTextEditorController) {
+            _text = text
+            self.controller = controller
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            text = textView.string
+        }
+    }
+}
+
 struct NoteEditor: View {
     let note: Note
     @ObservedObject var store: NoteStore
     @State private var showingImporter = false
     @State private var showingCategoryPicker = false
     @State private var newCategoryName = ""
+    @StateObject private var textEditorController = NoteTextEditorController()
 
     private var categoryLabel: String {
         let normalized = note.folder.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1327,6 +1564,28 @@ struct NoteEditor: View {
                 .filter { !$0.isEmpty }
         )
         return categories.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    private var inlineAttachments: [Attachment] {
+        if !note.contentBlocks.isEmpty {
+            let attachmentsByID = Dictionary(uniqueKeysWithValues: note.attachments.map { ($0.id, $0) })
+            return note.contentBlocks.compactMap { block in
+                guard case .attachment(let attachmentID) = block else { return nil }
+                return attachmentsByID[attachmentID]
+            }
+        }
+        if note.sourceID?.hasPrefix("applenotes:") == true {
+            return note.attachments
+        }
+        return note.attachments.filter { attachment in
+            note.body.localizedCaseInsensitiveContains(attachment.name) ||
+            note.body.localizedCaseInsensitiveContains(attachment.path)
+        }
+    }
+
+    private var remainingAttachments: [Attachment] {
+        let inlineIDs = Set(inlineAttachments.map(\.id))
+        return note.attachments.filter { !inlineIDs.contains($0.id) }
     }
 
     var body: some View {
@@ -1358,18 +1617,26 @@ struct NoteEditor: View {
                 .frame(width: 220, alignment: .leading)
             }
 
-            TextEditor(text: Binding(
+            NoteTextEditor(text: Binding(
                 get: { note.body },
                 set: { update(body: $0) }
-            ))
-            .font(.body)
-            .scrollContentBackground(.hidden)
+            ), controller: textEditorController)
+            .frame(minHeight: 180)
 
-            if !note.attachments.isEmpty {
+            if !inlineAttachments.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(inlineAttachments) { attachment in
+                        AttachmentPreview(attachment: attachment, url: store.url(for: attachment))
+                            .id(attachment.id)
+                    }
+                }
+            }
+
+            if !remainingAttachments.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Anhänge")
                         .font(.headline)
-                    ForEach(note.attachments) { attachment in
+                    ForEach(remainingAttachments) { attachment in
                         AttachmentPreview(attachment: attachment, url: store.url(for: attachment))
                             .id(attachment.id)
                     }
@@ -1379,6 +1646,19 @@ struct NoteEditor: View {
         .padding(24)
         .background(appEggshellColor)
         .toolbar {
+            Menu {
+                Button("Fett  **Text**") { textEditorController.apply(marker: "**") }
+                    .keyboardShortcut("b", modifiers: .command)
+                Button("Kursiv  _Text_") { textEditorController.apply(marker: "_") }
+                    .keyboardShortcut("i", modifiers: .command)
+                Divider()
+                Button("Überschrift  # Überschrift") { textEditorController.prefixSelectedLines(with: "# ") }
+                Button("Aufzählung  - Punkt") { textEditorController.prefixSelectedLines(with: "- ") }
+                Button("Nummerierte Liste  1. Punkt") { textEditorController.prefixSelectedLines(with: "1. ") }
+                Button("Code  `Code`") { textEditorController.apply(marker: "`") }
+            } label: {
+                Label("Markdown", systemImage: "textformat")
+            }
             Button(action: { showingImporter = true }) {
                 Label("Anhang hinzufügen", systemImage: "paperclip")
             }
@@ -1480,13 +1760,17 @@ struct AttachmentPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if contentType?.conforms(to: .image) == true,
-               let image = NSImage(contentsOf: url) {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 240)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            if let image = NSImage(contentsOf: url) {
+                Button(action: openAttachment) {
+                    Image(nsImage: image)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .frame(maxWidth: 460, maxHeight: 360)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .help("Bild öffnen")
             } else if contentType?.conforms(to: .movie) == true {
                 VideoAttachmentView(url: url)
                     .frame(height: 240)
@@ -1505,6 +1789,10 @@ struct AttachmentPreview: View {
                     .foregroundStyle(.orange)
             }
         }
+    }
+
+    private func openAttachment() {
+        NSWorkspace.shared.open(url)
     }
 }
 
