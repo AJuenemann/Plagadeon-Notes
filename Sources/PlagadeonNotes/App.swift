@@ -399,23 +399,25 @@ struct WindowAppearanceConfigurator: NSViewRepresentable {
 }
 
 struct PlagadeonLogo: View {
+    private static let originalSVG = """
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+      <rect width="256" height="256" rx="56" fill="#292824"/>
+      <circle cx="128" cy="128" r="82" fill="#E7E0C6"/>
+      <path d="M82 82v92M82 82h48c25 0 38 13 38 32s-13 32-38 32H82" fill="none" stroke="#292824" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M143 157v23M143 157l18 23v-23" fill="none" stroke="#F28C28" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="190" cy="70" r="15" fill="#F28C28"/>
+    </svg>
+    """
+
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7)
-                .fill(Color(red: 41 / 255.0, green: 40 / 255.0, blue: 36 / 255.0))
-            Circle()
-                .fill(appEggshellColor)
-                .padding(4)
-            Text("P")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(red: 41 / 255.0, green: 40 / 255.0, blue: 36 / 255.0))
-                .offset(x: -1, y: -1)
-            Text("N")
-                .font(.system(size: 7, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(red: 242 / 255.0, green: 140 / 255.0, blue: 40 / 255.0))
-                .offset(x: 7, y: 7)
+        Group {
+            if let image = NSImage(data: Data(Self.originalSVG.utf8)) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+            }
         }
-        .frame(width: 28, height: 28)
+        .frame(width: 36, height: 36)
     }
 }
 
@@ -500,19 +502,7 @@ struct ContentView: View {
     }
 
     private var sidebarColumn: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 9) {
-                PlagadeonLogo()
-                Text("Plagadeon Notes")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(appEggshellColor)
-
-            List {
+        List {
                 Section("Übersicht") {
                     Button {
                         selectedFilter = .all
@@ -592,11 +582,9 @@ struct ContentView: View {
                     }
                 }
             }
-            .listStyle(.sidebar)
-                .scrollContentBackground(.hidden)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(appEggshellColor)
-        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(appEggshellColor)
     }
 
@@ -655,7 +643,6 @@ struct ContentView: View {
             .scrollContentBackground(.hidden)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(appEggshellColor)
-            .navigationTitle(currentCategoryTitle)
             .toolbar {
                 Button(action: {
                     let folderName: String
@@ -720,8 +707,12 @@ struct ContentView: View {
         }
         .background(appEggshellColor)
         .toolbarBackground(appEggshellColor, for: .automatic)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                PlagadeonLogo()
+            }
+        }
         .overlay(WindowAppearanceConfigurator().allowsHitTesting(false))
-        .overlay(SplitDividerCursorMonitor().allowsHitTesting(false))
     }
 
     private var singleNoteLayout: some View {
@@ -760,13 +751,16 @@ struct ContentView: View {
     }
 
     var body: some View {
-        Group {
+        ZStack {
+            mainLayout
+                .opacity(showingSingleNote ? 0 : 1)
+                .allowsHitTesting(!showingSingleNote)
+
             if showingSingleNote {
                 singleNoteLayout
-            } else {
-                mainLayout
             }
         }
+        .overlay(SplitDividerCursorMonitor().allowsHitTesting(false))
         .onAppear { selectedID = store.notes.first?.id }
         .onChange(of: selectedFilter) { _ in
             if let currentID = selectedID, !filteredNotes.contains(where: { $0.id == currentID }) {
@@ -956,12 +950,18 @@ struct SplitDividerCursorMonitor: NSViewRepresentable {
         SplitDividerCursorView()
     }
 
-    func updateNSView(_ nsView: SplitDividerCursorView, context: Context) {}
+    func updateNSView(_ nsView: SplitDividerCursorView, context: Context) {
+        DispatchQueue.main.async {
+            nsView.restoreSavedDividerPositions()
+        }
+    }
 }
 
 final class SplitDividerCursorView: NSView {
     private var localMonitor: Any?
+    private var splitViewObservers: [NSObjectProtocol] = []
     private var cursorIsOnDivider = false
+    private var isRestoringDividerPositions = false
     private let dividerPositionsKey = "PlagadeonNotesDividerPositions"
 
     private var dividerCursor: NSCursor {
@@ -977,14 +977,15 @@ final class SplitDividerCursorView: NSView {
             for splitView in splitViews(in: window?.contentView) {
                 splitView.autosaveName = "PlagadeonNotesColumns"
             }
+            observeSplitViewLayout()
             DispatchQueue.main.async { [weak self] in
-                self?.restoreDividerPositions()
+                self?.restoreSavedDividerPositions()
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                self?.restoreDividerPositions()
+                self?.restoreSavedDividerPositions()
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
-                self?.restoreDividerPositions()
+                self?.restoreSavedDividerPositions()
             }
             localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged, .leftMouseUp]) { [weak self] event in
                 self?.updateCursor()
@@ -1008,6 +1009,33 @@ final class SplitDividerCursorView: NSView {
             NSEvent.removeMonitor(localMonitor)
             self.localMonitor = nil
         }
+        for observer in splitViewObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        splitViewObservers.removeAll()
+        
+    }
+
+    private func observeSplitViewLayout() {
+        guard let contentView = window?.contentView else { return }
+        guard let splitView = primarySplitView(in: contentView) else { return }
+        splitView.postsFrameChangedNotifications = true
+        let observer = NotificationCenter.default.addObserver(
+            forName: NSSplitView.didResizeSubviewsNotification,
+            object: splitView,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, !self.isRestoringDividerPositions else { return }
+            if NSEvent.pressedMouseButtons != 0 {
+                self.saveDividerPositions()
+            } else {
+                DispatchQueue.main.async {
+                    guard !self.isRestoringDividerPositions else { return }
+                    self.restoreSavedDividerPositions()
+                }
+            }
+        }
+        splitViewObservers.append(observer)
     }
 
     private func updateCursor() {
@@ -1101,25 +1129,32 @@ final class SplitDividerCursorView: NSView {
         }
     }
 
-    private func restoreDividerPositions() {
+    func restoreSavedDividerPositions() {
+        guard !isRestoringDividerPositions else { return }
         guard let contentView = window?.contentView,
               let positions = UserDefaults.standard.array(forKey: dividerPositionsKey) as? [Double] else {
             return
         }
-        for splitView in splitViews(in: contentView) {
-            for (index, position) in positions.enumerated() where index < splitView.subviews.count - 1 {
-                splitView.setPosition(CGFloat(position), ofDividerAt: index)
-            }
+        guard let splitView = primarySplitView(in: contentView) else { return }
+        isRestoringDividerPositions = true
+        defer { isRestoringDividerPositions = false }
+        for (index, position) in positions.enumerated() where index < splitView.subviews.count - 1 {
+            splitView.setPosition(CGFloat(position), ofDividerAt: index)
         }
     }
 
     private func saveDividerPositions() {
         guard let contentView = window?.contentView else { return }
-        guard let splitView = splitViews(in: contentView).first else { return }
+        guard let splitView = primarySplitView(in: contentView) else { return }
         let positions = (0..<max(splitView.subviews.count - 1, 0)).map {
             Double(splitView.subviews[$0].frame.maxX)
         }
         UserDefaults.standard.set(positions, forKey: dividerPositionsKey)
+    }
+
+    private func primarySplitView(in view: NSView) -> NSSplitView? {
+        splitViews(in: view).first { $0.subviews.count >= 3 }
+            ?? splitViews(in: view).first
     }
 
     private func splitViews(in view: NSView?) -> [NSSplitView] {
