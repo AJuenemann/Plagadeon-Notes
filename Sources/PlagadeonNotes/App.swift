@@ -959,7 +959,6 @@ struct SplitDividerCursorMonitor: NSViewRepresentable {
 
 final class SplitDividerCursorView: NSView {
     private var localMonitor: Any?
-    private var splitViewObservers: [NSObjectProtocol] = []
     private var cursorIsOnDivider = false
     private var isRestoringDividerPositions = false
     private let dividerPositionsKey = "PlagadeonNotesDividerPositions"
@@ -977,7 +976,6 @@ final class SplitDividerCursorView: NSView {
             for splitView in splitViews(in: window?.contentView) {
                 splitView.autosaveName = "PlagadeonNotesColumns"
             }
-            observeSplitViewLayout()
             DispatchQueue.main.async { [weak self] in
                 self?.restoreSavedDividerPositions()
             }
@@ -1009,33 +1007,6 @@ final class SplitDividerCursorView: NSView {
             NSEvent.removeMonitor(localMonitor)
             self.localMonitor = nil
         }
-        for observer in splitViewObservers {
-            NotificationCenter.default.removeObserver(observer)
-        }
-        splitViewObservers.removeAll()
-        
-    }
-
-    private func observeSplitViewLayout() {
-        guard let contentView = window?.contentView else { return }
-        guard let splitView = primarySplitView(in: contentView) else { return }
-        splitView.postsFrameChangedNotifications = true
-        let observer = NotificationCenter.default.addObserver(
-            forName: NSSplitView.didResizeSubviewsNotification,
-            object: splitView,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self, !self.isRestoringDividerPositions else { return }
-            if NSEvent.pressedMouseButtons != 0 {
-                self.saveDividerPositions()
-            } else {
-                DispatchQueue.main.async {
-                    guard !self.isRestoringDividerPositions else { return }
-                    self.restoreSavedDividerPositions()
-                }
-            }
-        }
-        splitViewObservers.append(observer)
     }
 
     private func updateCursor() {
