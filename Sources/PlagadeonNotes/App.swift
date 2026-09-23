@@ -5,29 +5,23 @@ import AppKit
 import PDFKit
 
 private struct NoteIdentity: Hashable {
+    let sourceID: String?
     let title: String
     let body: String
+    let contentSignature: String
 }
 
 enum NoteExporter {
     static func markdown(_ note: Note) -> String {
-        var output = "# \(note.title)\n\n\(note.body)\n"
-        if !note.attachments.isEmpty {
-            output += "\n## Anhänge\n\n"
-            output += note.attachments.map { "- [\($0.name)](attachments/\($0.path))" }.joined(separator: "\n")
-            output += "\n"
-        }
+        var output = "# \(note.title)\n\n"
+        output += renderMarkdownBody(note)
         return output
     }
 
     static func html(_ note: Note) -> String {
         let title = escape(note.title)
-        let body = escape(note.body).replacingOccurrences(of: "\n", with: "<br>\n")
-        let attachments = note.attachments.map {
-            "<li><a href=\"attachments/\($0.path)\">\(escape($0.name))</a></li>"
-        }.joined()
-        let attachmentSection = attachments.isEmpty ? "" : "<h2>Anhänge</h2><ul>\(attachments)</ul>"
-        return "<!doctype html><html><head><meta charset=\"utf-8\"><title>\(title)</title></head><body><h1>\(title)</h1><p>\(body)</p>\(attachmentSection)</body></html>"
+        let body = renderHTMLBody(note)
+        return "<!doctype html><html><head><meta charset=\"utf-8\"><title>\(title)</title></head><body><h1>\(title)</h1>\(body)</body></html>"
     }
 
     static func pdfData(_ note: Note) -> Data? {
@@ -54,6 +48,55 @@ enum NoteExporter {
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
             .replacingOccurrences(of: "\"", with: "&quot;")
+    }
+
+    private static func renderMarkdownBody(_ note: Note) -> String {
+        let attachmentsByID = Dictionary(uniqueKeysWithValues: note.attachments.map { ($0.id, $0) })
+        let blocks = note.contentBlocks.isEmpty ? [.text(note.body)] : note.contentBlocks
+        var lines: [String] = []
+
+        for block in blocks {
+            switch block {
+            case .text(let text):
+                lines.append(text)
+            case .attachment(let id):
+                guard let attachment = attachmentsByID[id] else { continue }
+                let path = "attachments/\(attachment.path)"
+                let ext = URL(fileURLWithPath: attachment.name).pathExtension.lowercased()
+                if ["jpg", "jpeg", "png", "heic", "gif", "tiff", "webp"].contains(ext) {
+                    lines.append("![\(attachment.name)](\(path))")
+                } else {
+                    lines.append("[\(attachment.name)](\(path))")
+                }
+            }
+        }
+
+        return lines.joined(separator: "\n\n") + "\n"
+    }
+
+    private static func renderHTMLBody(_ note: Note) -> String {
+        let attachmentsByID = Dictionary(uniqueKeysWithValues: note.attachments.map { ($0.id, $0) })
+        let blocks = note.contentBlocks.isEmpty ? [.text(note.body)] : note.contentBlocks
+        var sections: [String] = []
+
+        for block in blocks {
+            switch block {
+            case .text(let text):
+                let htmlText = escape(text).replacingOccurrences(of: "\n", with: "<br>\n")
+                sections.append("<p>\(htmlText)</p>")
+            case .attachment(let id):
+                guard let attachment = attachmentsByID[id] else { continue }
+                let path = "attachments/\(attachment.path)"
+                let ext = URL(fileURLWithPath: attachment.name).pathExtension.lowercased()
+                if ["jpg", "jpeg", "png", "heic", "gif", "tiff", "webp"].contains(ext) {
+                    sections.append("<p><img src=\"\(path)\" alt=\"\(escape(attachment.name))\" style=\"max-width:100%;height:auto;\"></p>")
+                } else {
+                    sections.append("<p><a href=\"\(path)\">\(escape(attachment.name))</a></p>")
+                }
+            }
+        }
+
+        return sections.joined(separator: "\n")
     }
 }
 
@@ -189,9 +232,14 @@ final class NoteStore: ObservableObject {
     private let attachmentsURL: URL
     private let snapshotsURL: URL
 
-    init() {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let directory = appSupport.appendingPathComponent("PlagadeonNotes", isDirectory: true)
+    init(baseDirectory: URL? = nil) {
+        let directory: URL
+        if let baseDirectory {
+            directory = baseDirectory
+        } else {
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            directory = appSupport.appendingPathComponent("PlagadeonNotes", isDirectory: true)
+        }
         fileURL = directory.appendingPathComponent("notes.json")
         attachmentsURL = directory.appendingPathComponent("Attachments", isDirectory: true)
         snapshotsURL = directory.appendingPathComponent("Snapshots", isDirectory: true)
@@ -335,31 +383,217 @@ final class NoteStore: ObservableObject {
 
     func importSnapshot(from folder: URL) -> SnapshotImportReport {
         let candidates = AppleNotesSnapshotInspector.noteCandidates(in: folder)
-        var existing = Set(notes.map { NoteIdentity(title: $0.title, body: $0.body) })
+        var existing = Set(notes.map {
+            NoteIdentity(
+                sourceID: $0.sourceID,
+                title: $0.title,
+                body: $0.body,
+                contentSignature: contentSignature(for: $0.contentBlocks)
+            )
+        })
         var importedNotes: [Note] = []
-        for candidate in candidates where !existing.contains(NoteIdentity(title: candidate.title, body: candidate.body)) {
-            var noteAttachments: [Attachment] = []
-            for attachURL in candidate.attachments {
-                if let stored = copyAttachment(attachURL) {
-                    noteAttachments.append(stored)
-                }
-            }
-            let contentBlocks = [.text(candidate.body)] + noteAttachments.map { NoteContentBlock.attachment($0.id) }
-            let note = Note(
+        var updatedCount = 0
+        var duplicateCount = 0
+        var unresolvedAttachments = 0
+        for candidate in candidates {
+            let candidateIdentity = NoteIdentity(
+                sourceID: candidate.sourceID,
                 title: candidate.title,
                 body: candidate.body,
-                attachments: noteAttachments,
-                folder: candidate.folder,
-                tags: [],
-                contentBlocks: contentBlocks,
-                sourceID: candidate.sourceID,
-                modifiedAt: candidate.modifiedAt
+                contentSignature: contentSignature(for: candidate.contentBlocks)
             )
-            importedNotes.append(note)
-            existing.insert(NoteIdentity(title: candidate.title, body: candidate.body))
+
+            let sourceID = candidate.sourceID
+            if let existingIndex = notes.firstIndex(where: { $0.sourceID == sourceID }) {
+                let current = notes[existingIndex]
+                let currentStructure = structureSignature(for: current.contentBlocks)
+                let incomingAttachmentKeys = Set(candidate.attachmentSources.map(\.sourceKey))
+                var incomingBlocks = candidate.contentBlocks.filter { block in
+                    switch block {
+                    case .text(let value):
+                        return !value.isEmpty
+                    case .attachment(let sourceKey):
+                        return incomingAttachmentKeys.contains(sourceKey)
+                    }
+                }
+                if incomingBlocks.isEmpty {
+                    incomingBlocks = [.text(candidate.body)]
+                }
+                let incomingStructure = structureSignature(for: incomingBlocks)
+                let incomingText = incomingBlocks.compactMap { block -> String? in
+                    guard case .text(let value) = block else { return nil }
+                    return value
+                }
+                .joined(separator: "\n")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                let incomingBody = incomingText.isEmpty ? candidate.body : incomingText
+                let currentAttachmentOrder = attachmentOrderSignature(for: current)
+                let incomingAttachmentOrder = attachmentOrderSignature(for: candidate)
+                let incomingAttachmentCount = Set(candidate.attachmentSources.map(\.sourceKey)).count
+                let unchanged = current.title == candidate.title
+                    && current.folder == candidate.folder
+                    && currentStructure == incomingStructure
+                    && current.body == incomingBody
+                    && current.attachments.count == incomingAttachmentCount
+                    && currentAttachmentOrder == incomingAttachmentOrder
+
+                if unchanged {
+                    duplicateCount += 1
+                    continue
+                }
+
+                let materialized = materializeCandidate(candidate, unresolvedAttachments: &unresolvedAttachments)
+                var replacement = materialized
+                replacement.id = current.id
+                replacement.tags = current.tags
+                notes[existingIndex] = replacement
+                updatedCount += 1
+                existing.insert(candidateIdentity)
+                continue
+            }
+
+            guard !existing.contains(candidateIdentity) else {
+                duplicateCount += 1
+                continue
+            }
+
+            importedNotes.append(materializeCandidate(candidate, unresolvedAttachments: &unresolvedAttachments))
+            existing.insert(candidateIdentity)
         }
         if !importedNotes.isEmpty { notes = importedNotes + notes }
-        return SnapshotImportReport(candidates: candidates.count, imported: importedNotes.count, duplicates: candidates.count - importedNotes.count)
+        return SnapshotImportReport(
+            candidates: candidates.count,
+            imported: importedNotes.count,
+            updated: updatedCount,
+            duplicates: duplicateCount,
+            unresolvedAttachments: unresolvedAttachments
+        )
+    }
+
+    private func materializeCandidate(_ candidate: SnapshotNoteCandidate, unresolvedAttachments: inout Int) -> Note {
+        var attachmentBySourceKey: [String: Attachment] = [:]
+        var noteAttachments: [Attachment] = []
+        for sourceAttachment in candidate.attachmentSources {
+            if attachmentBySourceKey[sourceAttachment.sourceKey] != nil {
+                continue
+            }
+            if let stored = copyAttachment(sourceAttachment.fileURL) {
+                noteAttachments.append(stored)
+                attachmentBySourceKey[sourceAttachment.sourceKey] = stored
+            } else {
+                unresolvedAttachments += 1
+            }
+        }
+
+        var contentBlocks: [NoteContentBlock] = []
+        for block in candidate.contentBlocks {
+            switch block {
+            case .text(let value):
+                if !value.isEmpty {
+                    contentBlocks.append(.text(value))
+                }
+            case .attachment(let sourceKey):
+                if let attachment = attachmentBySourceKey[sourceKey] {
+                    contentBlocks.append(.attachment(attachment.id))
+                } else {
+                    unresolvedAttachments += 1
+                }
+            }
+        }
+        if contentBlocks.isEmpty {
+            contentBlocks = [.text(candidate.body)] + noteAttachments.map { .attachment($0.id) }
+        }
+
+        return Note(
+            title: candidate.title,
+            body: joinedText(from: contentBlocks, fallback: candidate.body),
+            attachments: noteAttachments,
+            folder: candidate.folder,
+            tags: [],
+            contentBlocks: contentBlocks,
+            sourceID: candidate.sourceID,
+            modifiedAt: candidate.modifiedAt
+        )
+    }
+
+    private func joinedText(from blocks: [NoteContentBlock], fallback: String) -> String {
+        let text = blocks.compactMap { block -> String? in
+            guard case .text(let value) = block else { return nil }
+            return value
+        }
+        .joined(separator: "\n")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? fallback : text
+    }
+
+    private func contentSignature(for blocks: [NoteContentBlock]) -> String {
+        guard !blocks.isEmpty else { return "" }
+        return blocks.map { block in
+            switch block {
+            case .text(let value):
+                return "t:\(value)"
+            case .attachment(let id):
+                return "a:\(id.uuidString)"
+            }
+        }
+        .joined(separator: "|")
+    }
+
+    private func contentSignature(for blocks: [SnapshotContentBlock]) -> String {
+        guard !blocks.isEmpty else { return "" }
+        return blocks.map { block in
+            switch block {
+            case .text(let value):
+                return "t:\(value)"
+            case .attachment(let sourceKey):
+                return "a:\(sourceKey)"
+            }
+        }
+        .joined(separator: "|")
+    }
+
+    private func structureSignature(for blocks: [NoteContentBlock]) -> String {
+        guard !blocks.isEmpty else { return "" }
+        return blocks.map { block in
+            switch block {
+            case .text(let value):
+                return "t:\(value)"
+            case .attachment:
+                return "a"
+            }
+        }
+        .joined(separator: "|")
+    }
+
+    private func structureSignature(for blocks: [SnapshotContentBlock]) -> String {
+        guard !blocks.isEmpty else { return "" }
+        return blocks.map { block in
+            switch block {
+            case .text(let value):
+                return "t:\(value)"
+            case .attachment:
+                return "a"
+            }
+        }
+        .joined(separator: "|")
+    }
+
+    private func attachmentOrderSignature(for note: Note) -> String {
+        let attachmentByID = Dictionary(uniqueKeysWithValues: note.attachments.map { ($0.id, $0.name) })
+        return note.contentBlocks.compactMap { block -> String? in
+            guard case .attachment(let id) = block else { return nil }
+            return attachmentByID[id] ?? ""
+        }
+        .joined(separator: "|")
+    }
+
+    private func attachmentOrderSignature(for candidate: SnapshotNoteCandidate) -> String {
+        let byKey = Dictionary(uniqueKeysWithValues: candidate.attachmentSources.map { ($0.sourceKey, $0.filename) })
+        return candidate.contentBlocks.compactMap { block -> String? in
+            guard case .attachment(let sourceKey) = block else { return nil }
+            return byKey[sourceKey]
+        }
+        .joined(separator: "|")
     }
 
     func importAppleNotesFolder(from source: URL) -> (SnapshotSummary?, SnapshotImportReport?) {
@@ -400,9 +634,23 @@ final class NoteStore: ObservableObject {
               let restored = try? JSONDecoder().decode([Note].self, from: data) else {
             return BackupRestoreResult(imported: 0, error: "Das Backup konnte nicht gelesen werden.")
         }
-        var existing = Set(notes.map { NoteIdentity(title: $0.title, body: $0.body) })
+        var existing = Set(notes.map {
+            NoteIdentity(
+                sourceID: $0.sourceID,
+                title: $0.title,
+                body: $0.body,
+                contentSignature: contentSignature(for: $0.contentBlocks)
+            )
+        })
         var importedNotes: [Note] = []
-        for note in restored where existing.insert(NoteIdentity(title: note.title, body: note.body)).inserted {
+        for note in restored {
+            let identity = NoteIdentity(
+                sourceID: note.sourceID,
+                title: note.title,
+                body: note.body,
+                contentSignature: contentSignature(for: note.contentBlocks)
+            )
+            guard existing.insert(identity).inserted else { continue }
             importedNotes.append(note)
         }
         if !importedNotes.isEmpty { notes = importedNotes + notes }
@@ -1020,7 +1268,10 @@ struct ContentView: View {
             snapshotMessage = "Der Apple-Notes-Ordner konnte nicht importiert werden. Bitte den Zugriff erlauben."
             return
         }
-        snapshotMessage = "Import erfolgreich: \(importReport.imported) Notizen importiert, \(importReport.duplicates) Duplikate übersprungen, \(summary.media) Mediendateien gesichert."
+        snapshotMessage = "Import erfolgreich: \(importReport.imported) Notizen importiert, \(importReport.updated) bestehende Notizen aktualisiert, \(importReport.duplicates) Duplikate übersprungen, \(summary.media) Mediendateien gesichert."
+        if importReport.unresolvedAttachments > 0 {
+            snapshotMessage = (snapshotMessage ?? "") + " \(importReport.unresolvedAttachments) Anhänge konnten nicht vollständig aufgelöst werden."
+        }
     }
 }
 
@@ -1493,13 +1744,19 @@ struct NoteTextEditor: NSViewRepresentable {
     @Binding var text: String
     let controller: NoteTextEditorController
 
+    final class PassThroughScrollView: NSScrollView {
+        override func scrollWheel(with event: NSEvent) {
+            nextResponder?.scrollWheel(with: event)
+        }
+    }
+
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, controller: controller)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = true
+        let scrollView = PassThroughScrollView()
+        scrollView.hasVerticalScroller = false
         scrollView.drawsBackground = false
 
         let textView = NSTextView()
@@ -1551,6 +1808,7 @@ struct NoteEditor: View {
     @State private var showingCategoryPicker = false
     @State private var newCategoryName = ""
     @StateObject private var textEditorController = NoteTextEditorController()
+    @State private var editorWidth: CGFloat = 680
 
     private var categoryLabel: String {
         let normalized = note.folder.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1588,62 +1846,90 @@ struct NoteEditor: View {
         return note.attachments.filter { !inlineIDs.contains($0.id) }
     }
 
+    private var attachmentsByID: [UUID: Attachment] {
+        Dictionary(uniqueKeysWithValues: note.attachments.map { ($0.id, $0) })
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            TextField("Titel", text: Binding(
-                get: { note.title },
-                set: { update(title: $0) }
-            ))
-            .font(.largeTitle)
-            .textFieldStyle(.plain)
-
-            HStack {
-                Button {
-                    showingCategoryPicker = true
-                } label: {
-                    Label(categoryLabel, systemImage: "folder")
-                }
-                .buttonStyle(.bordered)
-                TextField("Tags, durch Komma getrennt", text: Binding(
-                    get: { note.tags.joined(separator: ", ") },
-                    set: { update(tags: $0) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                TextField("Titel", text: Binding(
+                    get: { note.title },
+                    set: { update(title: $0) }
                 ))
+                .font(.largeTitle)
                 .textFieldStyle(.plain)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
-                .background(appSelectedRowColor)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .frame(width: 220, alignment: .leading)
-            }
 
-            NoteTextEditor(text: Binding(
-                get: { note.body },
-                set: { update(body: $0) }
-            ), controller: textEditorController)
-            .frame(minHeight: 180)
+                HStack {
+                    Button {
+                        showingCategoryPicker = true
+                    } label: {
+                        Label(categoryLabel, systemImage: "folder")
+                    }
+                    .buttonStyle(.bordered)
+                    TextField("Tags, durch Komma getrennt", text: Binding(
+                        get: { note.tags.joined(separator: ", ") },
+                        set: { update(tags: $0) }
+                    ))
+                    .textFieldStyle(.plain)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 6)
+                    .background(appSelectedRowColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .frame(width: 220, alignment: .leading)
+                }
 
-            if !inlineAttachments.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(inlineAttachments) { attachment in
-                        AttachmentPreview(attachment: attachment, url: store.url(for: attachment))
-                            .id(attachment.id)
+                if note.contentBlocks.isEmpty {
+                    NoteTextEditor(text: Binding(
+                        get: { note.body },
+                        set: { update(body: $0) }
+                    ), controller: textEditorController)
+                    .frame(minHeight: max(260, editorHeight(for: note.body)))
+                } else {
+                    VStack(alignment: .leading, spacing: 16) {
+                        ForEach(Array(note.contentBlocks.enumerated()), id: \.offset) { index, block in
+                            switch block {
+                            case .text(let value):
+                                NoteTextEditor(text: Binding(
+                                    get: { value },
+                                    set: { updateTextBlock(at: index, text: $0) }
+                                ), controller: textEditorController)
+                                .frame(minHeight: editorHeight(for: value))
+                            case .attachment(let attachmentID):
+                                if let attachment = attachmentsByID[attachmentID] {
+                                    AttachmentPreview(attachment: attachment, url: store.url(for: attachment))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !remainingAttachments.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Anhänge")
+                            .font(.headline)
+                        ForEach(remainingAttachments) { attachment in
+                            AttachmentPreview(attachment: attachment, url: store.url(for: attachment))
+                                .id(attachment.id)
+                        }
                     }
                 }
             }
-
-            if !remainingAttachments.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Anhänge")
-                        .font(.headline)
-                    ForEach(remainingAttachments) { attachment in
-                        AttachmentPreview(attachment: attachment, url: store.url(for: attachment))
-                            .id(attachment.id)
-                    }
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            editorWidth = max(proxy.size.width - 24, 320)
+                        }
+                        .onChange(of: proxy.size.width) { newValue in
+                            editorWidth = max(newValue - 24, 320)
+                        }
                 }
-            }
+            )
         }
-        .padding(24)
         .background(appEggshellColor)
         .toolbar {
             Menu {
@@ -1747,6 +2033,37 @@ struct NoteEditor: View {
         }
         updated.modifiedAt = Date()
         store.update(updated)
+    }
+
+    private func updateTextBlock(at index: Int, text: String) {
+        guard index >= 0, index < note.contentBlocks.count else { return }
+        guard case .text = note.contentBlocks[index] else { return }
+        var updated = note
+        updated.contentBlocks[index] = .text(text)
+        updated.body = updated.contentBlocks.compactMap { block -> String? in
+            guard case .text(let value) = block else { return nil }
+            return value
+        }
+        .joined(separator: "\n")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        updated.modifiedAt = Date()
+        store.update(updated)
+    }
+
+    private func editorHeight(for text: String) -> CGFloat {
+        let visible = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if visible.isEmpty {
+            return 48
+        }
+
+        let targetWidth = max(editorWidth - 12, 280)
+        let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: NSFont.systemFontSize)]
+        let rect = (text as NSString).boundingRect(
+            with: NSSize(width: targetWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attributes
+        )
+        return max(68, ceil(rect.height) + 34)
     }
 }
 

@@ -1,6 +1,8 @@
 import Foundation
 import SQLite3
 import zlib
+import AppKit
+import CryptoKit
 
 enum SQLiteTableRole: String, Codable {
     case note
@@ -23,11 +25,25 @@ struct SQLiteInspection: Codable {
     let tables: [SQLiteTable]
 }
 
+enum SnapshotContentBlock: Equatable {
+    case text(String)
+    case attachment(sourceKey: String)
+}
+
+struct SnapshotAttachmentSource {
+    let sourceKey: String
+    let identifier: String?
+    let mediaIdentifier: String?
+    let filename: String
+    let fileURL: URL
+}
+
 struct SnapshotNoteCandidate {
     let title: String
     let body: String
     let folder: String
-    let attachments: [URL]
+    let attachmentSources: [SnapshotAttachmentSource]
+    let contentBlocks: [SnapshotContentBlock]
     let modifiedAt: Date
     let sourceID: String
 }
@@ -35,7 +51,21 @@ struct SnapshotNoteCandidate {
 struct SnapshotImportReport {
     let candidates: Int
     let imported: Int
+    let updated: Int
     let duplicates: Int
+    let unresolvedAttachments: Int
+}
+
+struct ProtobufField: Equatable {
+    enum Value: Equatable {
+        case varint(UInt64)
+        case fixed32(Data)
+        case fixed64(Data)
+        case lengthDelimited(Data)
+    }
+
+    let number: Int
+    let value: Value
 }
 
 enum AppleNotesSnapshotInspector {
@@ -106,12 +136,13 @@ enum AppleNotesSnapshotInspector {
         }
 
         // 2. Read attachments mapped to note PK (Z_ENT = 5 for ICAttachment, ZMEDIA -> ICMedia)
-        var noteAttachments: [Int64: [URL]] = [:]
+        var noteAttachments: [Int64: [SnapshotAttachmentSource]] = [:]
         let attachQuery = """
-        SELECT a.ZNOTE, a.ZIDENTIFIER, a.ZFILENAME, m.ZIDENTIFIER, m.ZFILENAME
+        SELECT a.ZNOTE, a.ZIDENTIFIER, a.ZFILENAME, m.ZIDENTIFIER, m.ZFILENAME, a.Z_PK
         FROM ZICCLOUDSYNCINGOBJECT a
         LEFT JOIN ZICCLOUDSYNCINGOBJECT m ON a.ZMEDIA = m.Z_PK
-        WHERE a.Z_ENT = 5;
+        WHERE a.Z_ENT = 5
+        ORDER BY a.ZNOTE ASC, a.ZCREATIONDATE ASC, a.Z_PK ASC;
         """
         if sqlite3_prepare_v2(database, attachQuery, -1, &statement, nil) == SQLITE_OK {
             while sqlite3_step(statement) == SQLITE_ROW {
@@ -120,15 +151,23 @@ enum AppleNotesSnapshotInspector {
                 let aFilename = sqlite3_column_text(statement, 2).map { String(cString: $0) }
                 let mIdent = sqlite3_column_text(statement, 3).map { String(cString: $0) }
                 let mFilename = sqlite3_column_text(statement, 4).map { String(cString: $0) }
+                let attachmentPK = sqlite3_column_int64(statement, 5)
 
-                let filename = mFilename ?? aFilename
                 let ident = mIdent ?? aIdent
 
-                if let filename, let fileURL = findMediaFile(baseFolder: baseFolder, identifier: ident, filename: filename) {
+                if let fileURL = findMediaFile(baseFolder: baseFolder, identifier: ident, filename: mFilename ?? aFilename) {
                     if noteAttachments[notePK] == nil {
                         noteAttachments[notePK] = []
                     }
-                    noteAttachments[notePK]?.append(fileURL)
+                    let fallbackKey = "attachment-pk:\(attachmentPK)"
+                    let source = SnapshotAttachmentSource(
+                        sourceKey: ident ?? aIdent ?? fallbackKey,
+                        identifier: aIdent,
+                        mediaIdentifier: mIdent,
+                        filename: mFilename ?? aFilename ?? fileURL.lastPathComponent,
+                        fileURL: fileURL
+                    )
+                    noteAttachments[notePK]?.append(source)
                 }
             }
             sqlite3_finalize(statement)
@@ -154,11 +193,13 @@ enum AppleNotesSnapshotInspector {
 
                 // Read binary protobuf data
                 var extractedText: String?
+                var extractedBlocks: [SnapshotContentBlock]?
                 if let blobPointer = sqlite3_column_blob(statement, 6) {
                     let blobBytes = sqlite3_column_bytes(statement, 6)
                     let data = Data(bytes: blobPointer, count: Int(blobBytes))
                     if let decompressed = decompressGzip(data) {
                         extractedText = extractProtobufText(decompressed)
+                        extractedBlocks = extractStructuredContent(from: decompressed, attachments: noteAttachments[pk] ?? [])
                     }
                 }
 
@@ -171,18 +212,25 @@ enum AppleNotesSnapshotInspector {
                     title = firstLine ?? "Ohne Titel"
                 }
 
-                guard !body.isEmpty || !(noteAttachments[pk] ?? []).isEmpty else { continue }
+                let attachments = noteAttachments[pk] ?? []
+                guard !body.isEmpty || !attachments.isEmpty else { continue }
 
                 let folderName = folders[folderPK] ?? "Notizen"
                 let modifiedDate = modTimestamp > 0
                     ? Date(timeIntervalSinceReferenceDate: modTimestamp)
                     : Date()
 
+                let contentBlocks = normalizeBlocks(
+                    extractedBlocks ?? ([.text(body)] + attachments.map { .attachment(sourceKey: $0.sourceKey) })
+                )
+                let bodyText = bodyFromBlocks(contentBlocks)
+
                 candidates.append(SnapshotNoteCandidate(
                     title: title,
-                    body: body,
+                    body: bodyText.isEmpty ? body : bodyText,
                     folder: folderName,
-                    attachments: noteAttachments[pk] ?? [],
+                    attachmentSources: attachments,
+                    contentBlocks: contentBlocks,
                     modifiedAt: modifiedDate,
                     sourceID: "applenotes:\(identifier)"
                 ))
@@ -193,7 +241,543 @@ enum AppleNotesSnapshotInspector {
         return candidates
     }
 
-    private static func findMediaFile(baseFolder: URL, identifier: String?, filename: String) -> URL? {
+    private static func extractStructuredContent(from data: Data, attachments: [SnapshotAttachmentSource]) -> [SnapshotContentBlock]? {
+        let plainText = extractProtobufText(data)
+        if let attributed = extractAttributedText(from: data) {
+            let attributedBlocks = contentBlocks(from: attributed, attachments: attachments)
+            if !attributedBlocks.isEmpty {
+                return normalizeBlocks(attributedBlocks)
+            }
+            let markdown = markdownString(from: attributed)
+            let chosen = preferredStructuredText(plainText: plainText, attributedText: markdown)
+            return buildContentBlocks(from: chosen, attachments: attachments)
+        }
+        if let text = plainText {
+            return buildContentBlocks(from: text, attachments: attachments)
+        }
+        return nil
+    }
+
+    private static func preferredStructuredText(plainText: String?, attributedText: String) -> String {
+        let placeholder = "\u{FFFC}"
+        let plain = plainText ?? ""
+        let attributed = attributedText
+
+        if attributed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return plain
+        }
+        if plain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return attributed
+        }
+
+        let plainHasPlaceholder = plain.contains(placeholder)
+        let attributedHasPlaceholder = attributed.contains(placeholder)
+
+        if attributedHasPlaceholder && !plainHasPlaceholder {
+            return attributed
+        }
+        if plainHasPlaceholder && !attributedHasPlaceholder {
+            return plain
+        }
+
+        let plainBullets = bulletCount(in: plain)
+        let attributedBullets = bulletCount(in: attributed)
+        if plainBullets > attributedBullets {
+            return plain
+        }
+
+        // If attributed extraction is much shorter, keep full plain text to avoid losing headings/sections.
+        if attributed.count * 5 < plain.count * 4 {
+            return plain
+        }
+
+        return attributed
+    }
+
+    private static func bulletCount(in text: String) -> Int {
+        let bulletChars: Set<Character> = ["•", "◦", "▪", "▫", "●", "-", "*"]
+        return text.split(separator: "\n", omittingEmptySubsequences: false).reduce(into: 0) { count, line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard let first = trimmed.first else { return }
+            if bulletChars.contains(first) {
+                count += 1
+            }
+        }
+    }
+
+    private static func extractAttributedText(from data: Data) -> NSAttributedString? {
+        let fields = protobufFields(in: data)
+        var bestMatch: NSAttributedString?
+        var bestLength = 0
+
+        for field in fields {
+            guard case .lengthDelimited(let payload) = field.value else { continue }
+            if let attributed = decodeAttributedStringArchive(payload), attributed.string.count > bestLength {
+                bestLength = attributed.string.count
+                bestMatch = attributed
+            }
+            if let nested = extractAttributedText(from: payload), nested.string.count > bestLength {
+                bestLength = nested.string.count
+                bestMatch = nested
+            }
+        }
+
+        return bestMatch
+    }
+
+    private static func decodeAttributedStringArchive(_ data: Data) -> NSAttributedString? {
+        guard data.starts(with: Data("bplist00".utf8)) else { return nil }
+        if let attributed = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? NSAttributedString {
+            return attributed
+        }
+        if let mutable = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? NSMutableAttributedString {
+            return NSAttributedString(attributedString: mutable)
+        }
+        return nil
+    }
+
+    private static func markdownString(from attributed: NSAttributedString) -> String {
+        var pieces: [String] = []
+        let fullRange = NSRange(location: 0, length: attributed.length)
+
+        attributed.enumerateAttributes(in: fullRange, options: []) { attributes, range, _ in
+            let raw = attributed.attributedSubstring(from: range).string
+            if raw.isEmpty {
+                return
+            }
+
+            if let linkValue = attributes[.link] {
+                let href: String
+                if let url = linkValue as? URL {
+                    href = url.absoluteString
+                } else {
+                    href = String(describing: linkValue)
+                }
+                pieces.append("[\(raw)](\(href))")
+                return
+            }
+
+            var text = raw
+            let font = attributes[.font] as? NSFont
+            let traits = font?.fontDescriptor.symbolicTraits ?? []
+            let isMonospace = traits.contains(.monoSpace)
+            let isBold = traits.contains(.bold)
+            let isItalic = traits.contains(.italic)
+            let hasUnderline = (attributes[.underlineStyle] as? NSNumber)?.intValue ?? 0 > 0
+            let hasStrikethrough = (attributes[.strikethroughStyle] as? NSNumber)?.intValue ?? 0 > 0
+
+            if isMonospace {
+                text = "`\(text)`"
+            } else {
+                if isBold && isItalic {
+                    text = "***\(text)***"
+                } else if isBold {
+                    text = "**\(text)**"
+                } else if isItalic {
+                    text = "_\(text)_"
+                }
+            }
+
+            if hasUnderline {
+                text = "<u>\(text)</u>"
+            }
+            if hasStrikethrough {
+                text = "~~\(text)~~"
+            }
+
+            pieces.append(text)
+        }
+
+        return pieces.joined()
+    }
+
+    private static func contentBlocks(from attributed: NSAttributedString, attachments: [SnapshotAttachmentSource]) -> [SnapshotContentBlock] {
+        var blocks: [SnapshotContentBlock] = []
+        var usedKeys = Set<String>()
+        var fallbackIndex = 0
+        var payloadDigests: [String: String] = [:]
+        let fullRange = NSRange(location: 0, length: attributed.length)
+
+        attributed.enumerateAttributes(in: fullRange, options: []) { attributes, range, _ in
+            if let attachment = attributes[.attachment] as? NSTextAttachment {
+                if let sourceKey = resolveAttachmentSourceKey(
+                    attachment: attachment,
+                    attachments: attachments,
+                    usedKeys: &usedKeys,
+                    fallbackIndex: &fallbackIndex,
+                    payloadDigests: &payloadDigests
+                ) {
+                    blocks.append(.attachment(sourceKey: sourceKey))
+                }
+                return
+            }
+
+            let raw = attributed.attributedSubstring(from: range).string
+            if raw.isEmpty {
+                return
+            }
+
+            let segment = formattedSegment(raw: raw, attributes: attributes)
+            if !segment.isEmpty {
+                blocks.append(.text(segment))
+            }
+        }
+
+        while fallbackIndex < attachments.count {
+            let source = attachments[fallbackIndex]
+            if !usedKeys.contains(source.sourceKey) {
+                usedKeys.insert(source.sourceKey)
+                blocks.append(.attachment(sourceKey: source.sourceKey))
+            }
+            fallbackIndex += 1
+        }
+
+        return blocks
+    }
+
+    private static func resolveAttachmentSourceKey(
+        attachment: NSTextAttachment,
+        attachments: [SnapshotAttachmentSource],
+        usedKeys: inout Set<String>,
+        fallbackIndex: inout Int,
+        payloadDigests: inout [String: String]
+    ) -> String? {
+        let preferredName = normalizedFilename(attachment.fileWrapper?.preferredFilename)
+        if let preferredName {
+            let ranked = attachments
+                .filter { !usedKeys.contains($0.sourceKey) }
+                .map { source -> (SnapshotAttachmentSource, Int) in
+                    let sourceName = normalizedFilename(source.filename) ?? ""
+                    let score: Int
+                    if sourceName == preferredName {
+                        score = 100
+                    } else if sourceName.replacingOccurrences(of: ".", with: "") == preferredName.replacingOccurrences(of: ".", with: "") {
+                        score = 90
+                    } else if sourceName.contains(preferredName) || preferredName.contains(sourceName) {
+                        score = 70
+                    } else {
+                        score = 0
+                    }
+                    return (source, score)
+                }
+                .sorted { lhs, rhs in lhs.1 > rhs.1 }
+            if let best = ranked.first, best.1 > 0 {
+                usedKeys.insert(best.0.sourceKey)
+                return best.0.sourceKey
+            }
+        }
+
+        if let digest = attachmentPayloadDigest(attachment) {
+            for source in attachments where !usedKeys.contains(source.sourceKey) {
+                let sourceDigest: String
+                if let cached = payloadDigests[source.sourceKey] {
+                    sourceDigest = cached
+                } else {
+                    let computed = filePayloadDigest(source.fileURL)
+                    payloadDigests[source.sourceKey] = computed
+                    sourceDigest = computed
+                }
+                if !sourceDigest.isEmpty && sourceDigest == digest {
+                    usedKeys.insert(source.sourceKey)
+                    return source.sourceKey
+                }
+            }
+        }
+
+        if let preferredImageSize = attachmentImageSize(attachment) {
+            let candidates = attachments.filter { !usedKeys.contains($0.sourceKey) }
+            let ranked = candidates.compactMap { source -> (SnapshotAttachmentSource, CGFloat)? in
+                guard let sourceSize = imageSize(for: source.fileURL) else { return nil }
+                return (source, imageSizeDistance(preferred: preferredImageSize, candidate: sourceSize))
+            }
+            .sorted { $0.1 < $1.1 }
+            if let best = ranked.first {
+                usedKeys.insert(best.0.sourceKey)
+                return best.0.sourceKey
+            }
+        }
+
+        while fallbackIndex < attachments.count {
+            let source = attachments[fallbackIndex]
+            fallbackIndex += 1
+            if !usedKeys.contains(source.sourceKey) {
+                usedKeys.insert(source.sourceKey)
+                return source.sourceKey
+            }
+        }
+        return nil
+    }
+
+    private static func normalizedFilename(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let normalized = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return normalized.isEmpty ? nil : normalized
+    }
+
+    private static func attachmentPayloadDigest(_ attachment: NSTextAttachment) -> String? {
+        if let data = attachment.fileWrapper?.regularFileContents, !data.isEmpty {
+            return digestHex(data)
+        }
+        if let image = attachment.image,
+           let tiff = image.tiffRepresentation,
+           !tiff.isEmpty {
+            return digestHex(tiff)
+        }
+        return nil
+    }
+
+    private static func filePayloadDigest(_ url: URL) -> String {
+        guard let data = try? Data(contentsOf: url, options: [.mappedIfSafe]), !data.isEmpty else {
+            return ""
+        }
+        return digestHex(data)
+    }
+
+    private static func digestHex(_ data: Data) -> String {
+        let digest = SHA256.hash(data: data)
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func attachmentImageSize(_ attachment: NSTextAttachment) -> CGSize? {
+        if let image = attachment.image {
+            return image.size
+        }
+        if let data = attachment.fileWrapper?.regularFileContents,
+           let image = NSImage(data: data) {
+            return image.size
+        }
+        return nil
+    }
+
+    private static func imageSize(for url: URL) -> CGSize? {
+        guard let image = NSImage(contentsOf: url) else { return nil }
+        return image.size
+    }
+
+    private static func imageSizeDistance(preferred: CGSize, candidate: CGSize) -> CGFloat {
+        let preferredArea = max(preferred.width * preferred.height, 1)
+        let candidateArea = max(candidate.width * candidate.height, 1)
+        let areaDelta = abs(log(preferredArea) - log(candidateArea))
+
+        let preferredRatio = max(preferred.width, 1) / max(preferred.height, 1)
+        let candidateRatio = max(candidate.width, 1) / max(candidate.height, 1)
+        let ratioDelta = abs(preferredRatio - candidateRatio)
+
+        return areaDelta + (ratioDelta * 3)
+    }
+
+    private static func formattedSegment(raw: String, attributes: [NSAttributedString.Key: Any]) -> String {
+        var text = raw
+        if text.contains("\u{FFFC}") {
+            text = text.replacingOccurrences(of: "\u{FFFC}", with: "")
+        }
+        guard !text.isEmpty else { return "" }
+
+        if let linkValue = attributes[.link] {
+            let href: String
+            if let url = linkValue as? URL {
+                href = url.absoluteString
+            } else {
+                href = String(describing: linkValue)
+            }
+            text = "[\(text)](\(href))"
+        } else {
+            let font = attributes[.font] as? NSFont
+            let traits = font?.fontDescriptor.symbolicTraits ?? []
+            let isMonospace = traits.contains(.monoSpace)
+            let isBold = traits.contains(.bold)
+            let isItalic = traits.contains(.italic)
+            let hasUnderline = (attributes[.underlineStyle] as? NSNumber)?.intValue ?? 0 > 0
+            let hasStrikethrough = (attributes[.strikethroughStyle] as? NSNumber)?.intValue ?? 0 > 0
+
+            if isMonospace {
+                text = "`\(text)`"
+            } else if isBold && isItalic {
+                text = "***\(text)***"
+            } else if isBold {
+                text = "**\(text)**"
+            } else if isItalic {
+                text = "_\(text)_"
+            }
+
+            if hasUnderline {
+                text = "<u>\(text)</u>"
+            }
+            if hasStrikethrough {
+                text = "~~\(text)~~"
+            }
+        }
+
+        if let paragraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle,
+           (!paragraphStyle.textLists.isEmpty || paragraphStyle.headIndent >= 12) {
+            text = text
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .map { line in
+                    let value = String(line)
+                    if value.trimmingCharacters(in: .whitespaces).isEmpty {
+                        return value
+                    }
+                    if value.trimmingCharacters(in: .whitespaces).hasPrefix("•") ||
+                        value.trimmingCharacters(in: .whitespaces).hasPrefix("-") {
+                        return value
+                    }
+                    return "• \(value)"
+                }
+                .joined(separator: "\n")
+        }
+
+        return text
+    }
+
+    private static func buildContentBlocks(from text: String, attachments: [SnapshotAttachmentSource]) -> [SnapshotContentBlock] {
+        let placeholder = "\u{FFFC}"
+        var blocks: [SnapshotContentBlock] = []
+        var attachmentIndex = 0
+        let parts = text.components(separatedBy: placeholder)
+
+        for index in parts.indices {
+            let part = parts[index]
+            if !part.isEmpty {
+                blocks.append(.text(part))
+            }
+            if index < parts.count - 1, attachmentIndex < attachments.count {
+                blocks.append(.attachment(sourceKey: attachments[attachmentIndex].sourceKey))
+                attachmentIndex += 1
+            }
+        }
+
+        while attachmentIndex < attachments.count {
+            blocks.append(.attachment(sourceKey: attachments[attachmentIndex].sourceKey))
+            attachmentIndex += 1
+        }
+
+        if blocks.isEmpty, !text.isEmpty {
+            blocks = [.text(text)]
+        }
+
+        return blocks
+    }
+
+    private static func normalizeBlocks(_ blocks: [SnapshotContentBlock]) -> [SnapshotContentBlock] {
+        let compacted = blocks.compactMap { (block: SnapshotContentBlock) -> SnapshotContentBlock? in
+            switch block {
+            case .text(let value):
+                let compact = value.replacingOccurrences(of: "\u{FFFC}", with: "")
+                return compact.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : .text(value)
+            case .attachment(let sourceKey):
+                return .attachment(sourceKey: sourceKey)
+            }
+        }
+        let perBlockRestored = compacted.map { (block: SnapshotContentBlock) -> SnapshotContentBlock in
+            guard case .text(let value) = block else { return block }
+            return .text(restoredInhaltsverzeichnisBullets(in: value))
+        }
+        return restoredInhaltsverzeichnisBulletsAcrossBlocks(perBlockRestored)
+    }
+
+    private static func restoredInhaltsverzeichnisBulletsAcrossBlocks(_ blocks: [SnapshotContentBlock]) -> [SnapshotContentBlock] {
+        guard let headingIndex = blocks.firstIndex(where: { block in
+            guard case .text(let value) = block else { return false }
+            return value.trimmingCharacters(in: .whitespacesAndNewlines).localizedCaseInsensitiveContains("inhaltsverzeichnis")
+        }) else {
+            return blocks
+        }
+
+        var updated = blocks
+        var index = headingIndex + 1
+        var changed = 0
+
+        while index < updated.count {
+            switch updated[index] {
+            case .attachment:
+                return changed >= 2 ? updated : blocks
+            case .text(let value):
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    return changed >= 2 ? updated : blocks
+                }
+
+                let lines = value.components(separatedBy: "\n")
+                let shortBlock = lines.count <= 3 && trimmed.count <= 90
+                if !shortBlock {
+                    return changed >= 2 ? updated : blocks
+                }
+
+                let rebuilt = lines.map { line -> String in
+                    let base = line.trimmingCharacters(in: .whitespaces)
+                    if base.isEmpty { return line }
+                    if base.hasPrefix("•") || base.hasPrefix("-") || base.hasPrefix("*") {
+                        return line
+                    }
+                    if let first = base.first, first.isNumber { return line }
+                    let leadingCount = line.prefix { $0 == " " || $0 == "\t" }.count
+                    let leading = String(line.prefix(leadingCount))
+                    let content = String(line.dropFirst(leadingCount))
+                    return "\(leading)• \(content)"
+                }
+                let merged = rebuilt.joined(separator: "\n")
+                if merged != value {
+                    updated[index] = .text(merged)
+                    changed += 1
+                }
+            }
+            index += 1
+        }
+
+        return changed >= 2 ? updated : blocks
+    }
+
+    private static func restoredInhaltsverzeichnisBullets(in text: String) -> String {
+        let lines = text.components(separatedBy: "\n")
+        guard let headingIndex = lines.firstIndex(where: {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines).localizedCaseInsensitiveContains("inhaltsverzeichnis")
+        }) else {
+            return text
+        }
+
+        var endIndex = headingIndex + 1
+        while endIndex < lines.count {
+            let trimmed = lines[endIndex].trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty {
+                break
+            }
+            endIndex += 1
+        }
+
+        guard endIndex - headingIndex - 1 >= 3 else {
+            return text
+        }
+
+        var updated = lines
+        for index in (headingIndex + 1)..<endIndex {
+            let original = updated[index]
+            let trimmed = original.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { continue }
+            if trimmed.hasPrefix("•") || trimmed.hasPrefix("-") || trimmed.hasPrefix("*") { continue }
+            if let first = trimmed.first, first.isNumber { continue }
+            if trimmed.count > 90 { continue }
+
+            let leadingWhitespaceCount = original.prefix { $0 == " " || $0 == "\t" }.count
+            let leading = String(original.prefix(leadingWhitespaceCount))
+            let content = String(original.dropFirst(leadingWhitespaceCount))
+            updated[index] = "\(leading)• \(content)"
+        }
+
+        return updated.joined(separator: "\n")
+    }
+
+    private static func bodyFromBlocks(_ blocks: [SnapshotContentBlock]) -> String {
+        blocks.compactMap { block -> String? in
+            guard case .text(let value) = block else { return nil }
+            return value
+        }
+        .joined(separator: "\n")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func findMediaFile(baseFolder: URL, identifier: String?, filename: String?) -> URL? {
         let fileManager = FileManager.default
 
         // Direct accounts media check
@@ -202,7 +786,8 @@ enum AppleNotesSnapshotInspector {
             if let accountDirs = try? fileManager.contentsOfDirectory(at: accountsURL, includingPropertiesForKeys: nil) {
                 for accountDir in accountDirs {
                     let mediaDir = accountDir.appendingPathComponent("Media/\(identifier)", isDirectory: true)
-                    if let genDirs = try? fileManager.contentsOfDirectory(at: mediaDir, includingPropertiesForKeys: nil) {
+                    if let filename,
+                       let genDirs = try? fileManager.contentsOfDirectory(at: mediaDir, includingPropertiesForKeys: nil) {
                         for genDir in genDirs {
                             let candidate = genDir.appendingPathComponent(filename)
                             if fileManager.fileExists(atPath: candidate.path) {
@@ -210,9 +795,14 @@ enum AppleNotesSnapshotInspector {
                             }
                         }
                     }
-                    let directCandidate = mediaDir.appendingPathComponent(filename)
-                    if fileManager.fileExists(atPath: directCandidate.path) {
-                        return directCandidate
+                    if let filename {
+                        let directCandidate = mediaDir.appendingPathComponent(filename)
+                        if fileManager.fileExists(atPath: directCandidate.path) {
+                            return directCandidate
+                        }
+                    }
+                    if let fallback = firstRegularFile(in: mediaDir) {
+                        return fallback
                     }
                 }
             }
@@ -221,12 +811,29 @@ enum AppleNotesSnapshotInspector {
         // Deep search in baseFolder if direct search misses
         if let enumerator = fileManager.enumerator(at: baseFolder, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) {
             for case let fileURL as URL in enumerator {
-                if fileURL.lastPathComponent == filename {
+                if let filename {
+                    if fileURL.lastPathComponent == filename {
+                        return fileURL
+                    }
+                } else if (try? fileURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true {
                     return fileURL
                 }
             }
         }
 
+        return nil
+    }
+
+    private static func firstRegularFile(in folder: URL) -> URL? {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else {
+            return nil
+        }
+        for case let fileURL as URL in enumerator {
+            if (try? fileURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true {
+                return fileURL
+            }
+        }
         return nil
     }
 
@@ -237,6 +844,44 @@ enum AppleNotesSnapshotInspector {
         guard let f3 = getProtobufField(f2, targetField: 3) else { return nil }
         guard let f2_inner = getProtobufField(f3, targetField: 2) else { return nil }
         return String(data: f2_inner, encoding: .utf8)
+    }
+
+    static func protobufFields(in data: Data) -> [ProtobufField] {
+        var fields: [ProtobufField] = []
+        var position = 0
+
+        while position < data.count {
+            guard let (tag, afterTag) = readVarint(data, from: position) else { break }
+            position = afterTag
+
+            let fieldNumber = Int(tag >> 3)
+            switch tag & 7 {
+            case 0:
+                guard let (value, afterValue) = readVarint(data, from: position) else { return fields }
+                fields.append(ProtobufField(number: fieldNumber, value: .varint(value)))
+                position = afterValue
+            case 1:
+                let end = position + 8
+                guard end <= data.count else { return fields }
+                fields.append(ProtobufField(number: fieldNumber, value: .fixed64(data.subdata(in: position..<end))))
+                position = end
+            case 2:
+                guard let (length, afterLength) = readVarint(data, from: position) else { return fields }
+                let end = afterLength + Int(length)
+                guard end <= data.count else { return fields }
+                fields.append(ProtobufField(number: fieldNumber, value: .lengthDelimited(data.subdata(in: afterLength..<end))))
+                position = end
+            case 5:
+                let end = position + 4
+                guard end <= data.count else { return fields }
+                fields.append(ProtobufField(number: fieldNumber, value: .fixed32(data.subdata(in: position..<end))))
+                position = end
+            default:
+                return fields
+            }
+        }
+
+        return fields
     }
 
     private static func getProtobufField(_ data: Data, targetField: Int) -> Data? {
@@ -388,7 +1033,8 @@ enum AppleNotesSnapshotInspector {
                 title: title.isEmpty ? "Ohne Titel" : title,
                 body: body,
                 folder: "Notizen",
-                attachments: [],
+                attachmentSources: [],
+                contentBlocks: [.text(body)],
                 modifiedAt: Date(),
                 sourceID: "generic:\(title.hashValue):\(body.hashValue)"
             ))
